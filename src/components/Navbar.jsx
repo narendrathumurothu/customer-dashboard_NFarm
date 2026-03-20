@@ -60,7 +60,7 @@ const Navbar = ({ activePage, setActivePage, cartCount, onLogout }) => {
           </button>
 
           {/* Profile */}
-          <div className="hidden md:flex items-center gap-2 bg-white bg-opacity-20 rounded-xl px-3 py-2">
+          <div onClick={() => setActivePage('profile')} className="hidden md:flex items-center gap-2 bg-white bg-opacity-20 rounded-xl px-3 py-2">
             <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
               <span className="text-green-600 font-bold text-sm">
                 {customerName.charAt(0).toUpperCase()}
@@ -68,6 +68,7 @@ const Navbar = ({ activePage, setActivePage, cartCount, onLogout }) => {
             </div>
             <span className="text-white text-sm font-medium">{customerName}</span>
           </div>
+          
 
           {/* Logout */}
           <button onClick={onLogout}

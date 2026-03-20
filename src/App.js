@@ -9,6 +9,7 @@ import Checkout       from './pages/Checkout';
 import OrderSuccess   from './pages/OrderSuccess';
 import Orders         from './pages/Orders';
 import Navbar         from './components/Navbar';
+import Profile        from './pages/Profile';
 
 const App = () => {
   const [activePage, setActivePage]           = useState('home');
@@ -63,6 +64,8 @@ const App = () => {
 
   const renderPage = () => {
     switch (activePage) {
+      case 'profile':
+        return <Profile setActivePage={setActivePage} />
       case 'home':
         return <Home setActivePage={setActivePage} onProductClick={handleProductClick} addToCart={addToCart} onBuyNow={handleBuyNow} />;
       case 'products':
