@@ -8,7 +8,7 @@ const categoryEmojis = {
 };
 
 const Checkout = ({ orderItems, setActivePage, setCart }) => {
-  const customerId = localStorage.getItem('customerId');
+  const customerId   = localStorage.getItem('customerId');
   const customerName = localStorage.getItem('customerName') || '';
 
   const [loading, setLoading] = useState(false);
@@ -26,27 +26,56 @@ const Checkout = ({ orderItems, setActivePage, setCart }) => {
     setLoading(true);
     setError('');
 
+    // ─── Debug ───────────────────────────────────────────────────────────────
+    console.log('🛒 customerId:', customerId);
+    console.log('🛒 orderItems:', orderItems);
+    console.log('🛒 formData:', formData);
+    console.log('🛒 total:', total);
+
+    // ─── Validation ───────────────────────────────────────────────────────────
+    if (!customerId) {
+      setError('Please login again!');
+      setLoading(false);
+      return;
+    }
+    if (!orderItems || orderItems.length === 0) {
+      setError('Cart is empty!');
+      setLoading(false);
+      return;
+    }
+    if (!formData.name || !formData.phone || !formData.address) {
+      setError('Please fill all delivery details!');
+      setLoading(false);
+      return;
+    }
+
+    const body = {
+      customerId,
+      items: orderItems.map(item => ({
+        productId:   item._id,
+        productName: item.productName,
+        price:       item.price,
+        qty:         item.qty,
+        image:       item.image,
+        category:    item.category,
+      })),
+      totalAmount: total,
+      name:        formData.name,
+      phone:       formData.phone,
+      address:     formData.address,
+    };
+
+    console.log('🛒 Sending body:', JSON.stringify(body));
+
     try {
       const res  = await fetch('http://localhost:4000/orders/place', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId,
-          items: orderItems.map(item => ({
-            productId:   item._id,
-            productName: item.productName,
-            price:       item.price,
-            qty:         item.qty,
-            image:       item.image,
-            category:    item.category,
-          })),
-          totalAmount: total,
-          name:        formData.name,
-          phone:       formData.phone,
-          address:     formData.address,
-        }),
+        body:    JSON.stringify(body),
       });
       const data = await res.json();
+
+      console.log('🛒 Response:', data);
 
       if (res.ok) {
         setCart([]);
@@ -54,7 +83,10 @@ const Checkout = ({ orderItems, setActivePage, setCart }) => {
       } else {
         setError(data.message || 'Order failed!');
       }
-    } catch { setError('Server down Please try some time'); }
+    } catch (err) {
+      console.log('🛒 Error:', err);
+      setError('Server down! Please try again.');
+    }
     setLoading(false);
   };
 
@@ -68,7 +100,7 @@ const Checkout = ({ orderItems, setActivePage, setCart }) => {
 
       <div>
         <h2 className="text-2xl font-bold text-gray-800">🛍️ Checkout</h2>
-        <p className="text-gray-500 text-sm">Confirm the Order Details </p>
+        <p className="text-gray-500 text-sm">Confirm the Order Details</p>
       </div>
 
       {error && (
@@ -81,8 +113,6 @@ const Checkout = ({ orderItems, setActivePage, setCart }) => {
 
         {/* Left - Form */}
         <div className="flex-1 space-y-4">
-
-          {/* Delivery Details */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
             <h3 className="font-bold text-gray-800 mb-4">Delivery Details</h3>
             <form onSubmit={handlePlaceOrder} className="space-y-3">
@@ -126,7 +156,7 @@ const Checkout = ({ orderItems, setActivePage, setCart }) => {
                 <span className="text-2xl">💵</span>
                 <div>
                   <p className="font-bold text-gray-800 text-sm">Cash on Delivery</p>
-                  <p className="text-gray-500 text-xs">You pay on Delivery </p>
+                  <p className="text-gray-500 text-xs">You pay on Delivery</p>
                 </div>
                 <div className="ml-auto w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs">✓</span>

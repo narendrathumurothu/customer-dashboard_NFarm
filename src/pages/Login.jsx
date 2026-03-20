@@ -16,266 +16,334 @@ const Login = ({ onLogin }) => {
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
   const [success, setSuccess]           = useState('');
-  const [selectedLang, setSelectedLang] = useState(
-    localStorage.getItem('language') || 'en'
-  );
+  const [selectedLang, setSelectedLang] = useState(localStorage.getItem('language') || 'en');
+
+  // Register OTP States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp]         = useState('');
+  const [timer, setTimer]     = useState(0);
+
+  // Forgot Password States
+  const [isForgot, setIsForgot]               = useState(false);
+  const [forgotStep, setForgotStep]           = useState(1);
+  const [forgotEmail, setForgotEmail]         = useState('');
+  const [forgotOtp, setForgotOtp]             = useState('');
+  const [newPassword, setNewPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotTimer, setForgotTimer]         = useState(0);
 
   const [formData, setFormData] = useState({
     name: '', email: '', Password: '', phone: '', address: '',
   });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentBg(prev => (prev + 1) % backgroundImages.length);
-    }, 3000);
+    const interval = setInterval(() => setCurrentBg(prev => (prev + 1) % backgroundImages.length), 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Google Translate language change
+  useEffect(() => {
+    if (timer <= 0) return;
+    const t = setInterval(() => setTimer(prev => prev - 1), 1000);
+    return () => clearInterval(t);
+  }, [timer]);
+
+  useEffect(() => {
+    if (forgotTimer <= 0) return;
+    const t = setInterval(() => setForgotTimer(prev => prev - 1), 1000);
+    return () => clearInterval(t);
+  }, [forgotTimer]);
+
   const handleLangSelect = (lang) => {
     setSelectedLang(lang);
     localStorage.setItem('language', lang);
-
     const date = new Date();
     date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
-
     if (lang === 'en') {
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
-      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname}`;
     } else {
       document.cookie = `googtrans=/en/${lang}; expires=${date.toUTCString()}; path=/`;
       document.cookie = `googtrans=/en/${lang}; expires=${date.toUTCString()}; path=/; domain=${window.location.hostname}`;
-      document.cookie = `googtrans=/en/${lang}; expires=${date.toUTCString()}; path=/; domain=.${window.location.hostname}`;
     }
-
     const select = document.querySelector('.goog-te-combo');
-    if (select) {
-      select.value = lang === 'en' ? '' : lang;
-      select.dispatchEvent(new Event('change'));
-    }
+    if (select) { select.value = lang === 'en' ? '' : lang; select.dispatchEvent(new Event('change')); }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(''); setSuccess('');
+  const handleSendOTP = async (e) => {
+    e.preventDefault(); setLoading(true); setError(''); setSuccess('');
     try {
-      const url  = isRegister
-        ? 'http://localhost:4000/customers/register'
-        : 'http://localhost:4000/customers/login';
-      const body = isRegister
-        ? {
-            name:     formData.name,
-            email:    formData.email,
-            Password: formData.Password,
-            phone:    formData.phone,
-            address:  formData.address,
-          }
-        : { email: formData.email, Password: formData.Password };
-
-      const res  = await fetch(url, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
+      const res  = await fetch('http://localhost:4000/customers/send-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name, email: formData.email, Password: formData.Password, phone: formData.phone, address: formData.address }),
       });
       const data = await res.json();
+      if (res.ok) { setOtpSent(true); setTimer(600); setSuccess(`✅ OTP sent to ${formData.email}!`); }
+      else setError(data.message || 'Failed to send OTP!');
+    } catch { setError('Server not connected!'); }
+    setLoading(false);
+  };
 
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault(); setLoading(true); setError(''); setSuccess('');
+    try {
+      const res  = await fetch('http://localhost:4000/customers/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, otp }),
+      });
+      const data = await res.json();
       if (res.ok) {
-        if (isRegister) {
-          setSuccess('✅ Registered successfully! Please login.');
-          setIsRegister(false);
-          setFormData({ name: '', email: '', Password: '', phone: '', address: '' });
-        } else {
-          localStorage.setItem('customerToken', data.token);
-          localStorage.setItem('customerId',    data.customerId);
-          localStorage.setItem('customerName',  data.name);
-          localStorage.setItem('language',      selectedLang);
-          onLogin();
-        }
-      } else {
-        setError(data.message || 'Something went wrong Please Try again ');
-      }
+        setSuccess('✅ Registered successfully! Please login.');
+        setIsRegister(false); setOtpSent(false); setOtp('');
+        setFormData({ name: '', email: '', Password: '', phone: '', address: '' });
+      } else setError(data.message || 'Invalid OTP!');
+    } catch { setError('Server not connected!'); }
+    setLoading(false);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault(); setLoading(true); setError(''); setSuccess('');
+    try {
+      const res  = await fetch('http://localhost:4000/customers/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, Password: formData.Password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('customerToken', data.token);
+        localStorage.setItem('customerId', data.customerId);
+        localStorage.setItem('customerName', data.name);
+        localStorage.setItem('language', selectedLang);
+        onLogin();
+      } else setError(data.message || 'Something went wrong!');
+    } catch { setError('Server not connected!'); }
+    setLoading(false);
+  };
+
+  const handleForgotSendOTP = async (e) => {
+    e.preventDefault(); setLoading(true); setError(''); setSuccess('');
+    try {
+      const res  = await fetch('http://localhost:4000/customers/forgot-password/send-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) { setForgotStep(2); setForgotTimer(600); setSuccess(`✅ OTP sent to ${forgotEmail}!`); }
+      else setError(data.message || 'Failed!');
+    } catch { setError('Server not connected!'); }
+    setLoading(false);
+  };
+
+  const handleForgotVerifyOTP = async (e) => {
+    e.preventDefault(); setLoading(true); setError(''); setSuccess('');
+    try {
+      const res  = await fetch('http://localhost:4000/customers/forgot-password/verify-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, otp: forgotOtp }),
+      });
+      const data = await res.json();
+      if (res.ok) { setForgotStep(3); setSuccess('✅ OTP verified!'); }
+      else setError(data.message || 'Invalid OTP!');
+    } catch { setError('Server not connected!'); }
+    setLoading(false);
+  };
+
+  const handleForgotReset = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) { setError('Passwords do not match!'); return; }
+    setLoading(true); setError(''); setSuccess('');
+    try {
+      const res  = await fetch('http://localhost:4000/customers/forgot-password/reset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess('✅ Password reset successfully! Please login.');
+        setIsForgot(false); setForgotStep(1);
+        setForgotEmail(''); setForgotOtp(''); setNewPassword(''); setConfirmPassword('');
+      } else setError(data.message || 'Failed!');
     } catch { setError('Server not connected!'); }
     setLoading(false);
   };
 
   const labels = {
-    en: {
-      selectLang:  'Select Language',
-      login:       'Login',
-      register:    'Register',
-      name:        'Full Name',
-      phone:       'Phone Number',
-      address:     'Address',
-      email:       'Email',
-      password:    'Password',
-      loginBtn:    'Login',
-      registerBtn: 'Register',
-    },
-    te: {
-      selectLang:  'భాష ఎంచుకోండి',
-      login:       'లాగిన్',
-      register:    'నమోదు చేయి',
-      name:        'పూర్తి పేరు',
-      phone:       'ఫోన్ నంబర్',
-      address:     'చిరునామా',
-      email:       'ఇమెయిల్',
-      password:    'పాస్‌వర్డ్',
-      loginBtn:    'లాగిన్ చేయండి',
-      registerBtn: 'నమోదు చేయండి',
-    },
-    hi: {
-      selectLang:  'भाषा चुनें',
-      login:       'लॉगिन',
-      register:    'पंजीकरण',
-      name:        'पूरा नाम',
-      phone:       'फोन नंबर',
-      address:     'पता',
-      email:       'ईमेल',
-      password:    'पासवर्ड',
-      loginBtn:    'लॉगिन करें',
-      registerBtn: 'पंजीकरण करें',
-    },
+    en: { selectLang: 'Select Language', login: 'Login', register: 'Register', name: 'Full Name', phone: 'Phone Number', address: 'Address', email: 'Email', password: 'Password', loginBtn: 'Login', registerBtn: 'Register' },
+    te: { selectLang: 'భాష ఎంచుకోండి', login: 'లాగిన్', register: 'నమోదు చేయి', name: 'పూర్తి పేరు', phone: 'ఫోన్ నంబర్', address: 'చిరునామా', email: 'ఇమెయిల్', password: 'పాస్‌వర్డ్', loginBtn: 'లాగిన్ చేయండి', registerBtn: 'నమోదు చేయండి' },
+    hi: { selectLang: 'भाषा चुनें', login: 'लॉगिन', register: 'पंजीकरण', name: 'पूरा नाम', phone: 'फोन नंबर', address: 'पता', email: 'ईमेल', password: 'पासवर्ड', loginBtn: 'लॉगिन करें', registerBtn: 'पंजीकरण करें' },
   };
 
   const L = labels[selectedLang] || labels.en;
+  const formatTimer = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-
-      {/* Background */}
       {backgroundImages.map((img, index) => (
-        <div key={index} style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: `url(${img})`,
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          opacity: currentBg === index ? 1 : 0,
-          transition: 'opacity 1.5s ease-in-out', zIndex: 0,
-        }} />
+        <div key={index} style={{ position: 'absolute', inset: 0, backgroundImage: `url(${img})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: currentBg === index ? 1 : 0, transition: 'opacity 1.5s ease-in-out', zIndex: 0 }} />
       ))}
       <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1 }} />
 
-      {/* Card */}
-      <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4"
-        style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+      <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
 
-        {/* Logo */}
         <div className="text-center mb-4">
           <span className="text-5xl">🌾</span>
           <h1 className="text-2xl font-bold text-gray-800 mt-2">NFarm</h1>
           <p className="text-gray-500 text-sm">Fresh Products from farm to your House</p>
         </div>
 
-        {/* ✅ Language Select */}
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-500 mb-2 text-center">
-            🌐 {L.selectLang}
-          </p>
+          <p className="text-xs font-medium text-gray-500 mb-2 text-center">🌐 {L.selectLang}</p>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { code: 'en', label: '🇬🇧 English' },
-              { code: 'te', label: '🇮🇳 తెలుగు' },
-              { code: 'hi', label: '🇮🇳 हिंदी' },
-            ].map(lang => (
-              <button key={lang.code} type="button"
-                onClick={() => handleLangSelect(lang.code)}
+            {[{ code: 'en', label: '🇬🇧 English' }, { code: 'te', label: '🇮🇳 తెలుగు' }, { code: 'hi', label: '🇮🇳 हिंदी' }].map(lang => (
+              <button key={lang.code} type="button" onClick={() => handleLangSelect(lang.code)}
                 className="py-2 rounded-xl text-xs font-medium transition-all"
-                style={{
-                  background: selectedLang === lang.code ? '#16a34a' : '#f3f4f6',
-                  color:      selectedLang === lang.code ? 'white'   : '#374151',
-                }}>
+                style={{ background: selectedLang === lang.code ? '#16a34a' : '#f3f4f6', color: selectedLang === lang.code ? 'white' : '#374151' }}>
                 {lang.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
-          <button onClick={() => { setIsRegister(false); setError(''); setSuccess(''); }}
-            className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
-            style={{ background: !isRegister ? '#16a34a' : 'transparent', color: !isRegister ? 'white' : '#6b7280' }}>
-            🔐 {L.login}
-          </button>
-          <button onClick={() => { setIsRegister(true); setError(''); setSuccess(''); }}
-            className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
-            style={{ background: isRegister ? '#16a34a' : 'transparent', color: isRegister ? 'white' : '#6b7280' }}>
-            📝 {L.register}
-          </button>
-        </div>
-
-        {/* Alerts */}
         {error   && <div className="bg-red-50 rounded-xl px-4 py-3 mb-3"><p className="text-red-600 text-sm">❌ {error}</p></div>}
         {success && <div className="bg-green-50 rounded-xl px-4 py-3 mb-3"><p className="text-green-600 text-sm">{success}</p></div>}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {isRegister && (
-            <>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">👤 {L.name}</label>
-                <input type="text" value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter your name"
-                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" required />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">📱 {L.phone}</label>
-                <input type="text" value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Phone number"
-                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">📍 {L.address}</label>
-                <input type="text" value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Your address"
-                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" />
-              </div>
-            </>
-          )}
-
+        {isForgot ? (
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">📧 {L.email}</label>
-            <input type="email" value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Enter email"
-              className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" required />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">🔒 {L.password}</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.Password}
-                onChange={(e) => setFormData({ ...formData, Password: e.target.value })}
-                placeholder="Enter password"
-                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none pr-10" required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-400">
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <div className="text-center mb-4">
+              <p className="text-3xl mb-1">🔐</p>
+              <h2 className="font-bold text-gray-800">Forgot Password</h2>
+              <p className="text-gray-500 text-xs mt-1">
+                {forgotStep === 1 ? 'Enter your email to receive OTP' : forgotStep === 2 ? 'Enter the OTP sent to your email' : 'Set your new password'}
+              </p>
             </div>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              {[1, 2, 3].map(step => (
+                <div key={step} className="flex items-center gap-2">
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: forgotStep >= step ? '#16a34a' : '#e5e7eb', color: forgotStep >= step ? 'white' : '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{step}</div>
+                  {step < 3 && <div style={{ width: 20, height: 2, background: forgotStep > step ? '#16a34a' : '#e5e7eb' }} />}
+                </div>
+              ))}
+            </div>
+
+            {forgotStep === 1 && (
+              <form onSubmit={handleForgotSendOTP} className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">📧 Email</label>
+                  <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="Enter your registered email" className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" required />
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50">
+                  {loading ? '⏳ Sending...' : '📧 Send OTP'}
+                </button>
+              </form>
+            )}
+
+            {forgotStep === 2 && (
+              <form onSubmit={handleForgotVerifyOTP} className="space-y-3">
+                <div className="text-center bg-green-50 rounded-xl p-3">
+                  <p className="text-gray-600 text-sm">OTP sent to <strong>{forgotEmail}</strong></p>
+                  {forgotTimer > 0 && <p className="text-green-600 text-sm font-bold mt-1">⏰ {formatTimer(forgotTimer)}</p>}
+                  {forgotTimer === 0 && <p className="text-red-500 text-sm mt-1">⚠️ OTP expired!</p>}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">🔐 Enter OTP</label>
+                  <input type="text" value={forgotOtp} onChange={e => setForgotOtp(e.target.value)} placeholder="Enter 6-digit OTP" maxLength={6} className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none text-center text-2xl font-bold tracking-widest" required />
+                </div>
+                <button type="submit" disabled={loading || forgotTimer === 0} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50">
+                  {loading ? '⏳ Verifying...' : '✅ Verify OTP'}
+                </button>
+              </form>
+            )}
+
+            {forgotStep === 3 && (
+              <form onSubmit={handleForgotReset} className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">🔒 New Password</label>
+                  <div className="relative">
+                    <input type={showPassword ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Enter new password" className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none pr-10" required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">✅ Confirm Password</label>
+                  <input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" required />
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50">
+                  {loading ? '⏳ Resetting...' : '🔐 Reset Password'}
+                </button>
+              </form>
+            )}
+
+            <button type="button" onClick={() => { setIsForgot(false); setForgotStep(1); setForgotEmail(''); setForgotOtp(''); setNewPassword(''); setConfirmPassword(''); setError(''); setSuccess(''); }} className="w-full bg-gray-100 text-gray-600 py-2.5 rounded-xl text-sm font-medium mt-3">
+              ← Back to Login
+            </button>
           </div>
 
-          <button type="submit" disabled={loading}
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50 transition-all">
-            {loading ? '⏳ Please wait...' : isRegister ? `📝 ${L.registerBtn}` : `🔐 ${L.loginBtn}`}
-          </button>
-        </form>
+        ) : (
+          <>
+            <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
+              <button onClick={() => { setIsRegister(false); setOtpSent(false); setOtp(''); setError(''); setSuccess(''); }} className="flex-1 py-2 rounded-xl text-sm font-medium transition-all" style={{ background: !isRegister ? '#16a34a' : 'transparent', color: !isRegister ? 'white' : '#6b7280' }}>🔐 {L.login}</button>
+              <button onClick={() => { setIsRegister(true); setOtpSent(false); setOtp(''); setError(''); setSuccess(''); }} className="flex-1 py-2 rounded-xl text-sm font-medium transition-all" style={{ background: isRegister ? '#16a34a' : 'transparent', color: isRegister ? 'white' : '#6b7280' }}>📝 {L.register}</button>
+            </div>
 
-        {/* Dots */}
+            {isRegister && otpSent ? (
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div className="text-center bg-green-50 rounded-2xl p-5">
+                  <p className="text-4xl mb-2">📧</p>
+                  <p className="font-bold text-gray-800">OTP Sent!</p>
+                  <p className="text-gray-500 text-sm mt-1">Check: <strong>{formData.email}</strong></p>
+                  {timer > 0 && <p className="text-green-600 text-sm font-bold mt-2">⏰ {formatTimer(timer)}</p>}
+                  {timer === 0 && <p className="text-red-500 text-sm mt-2">⚠️ OTP expired!</p>}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">🔐 Enter OTP</label>
+                  <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter 6-digit OTP" maxLength={6} className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none text-center text-2xl font-bold tracking-widest" required />
+                </div>
+                <button type="submit" disabled={loading || timer === 0} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50">{loading ? '⏳ Verifying...' : '✅ Verify & Register'}</button>
+                <button type="button" onClick={() => { setOtpSent(false); setOtp(''); setError(''); setSuccess(''); }} className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl text-sm font-medium">← Back to Register</button>
+              </form>
+
+            ) : isRegister ? (
+              <form onSubmit={handleSendOTP} className="space-y-3">
+                {[{ label: `👤 ${L.name}`, key: 'name', type: 'text', ph: 'Enter your name', req: true }, { label: `📱 ${L.phone}`, key: 'phone', type: 'text', ph: 'Phone number', req: false }, { label: `📍 ${L.address}`, key: 'address', type: 'text', ph: 'Your address', req: false }, { label: `📧 ${L.email}`, key: 'email', type: 'email', ph: 'Enter email', req: true }].map(f => (
+                  <div key={f.key}>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">{f.label}</label>
+                    <input type={f.type} value={formData[f.key]} onChange={e => setFormData({ ...formData, [f.key]: e.target.value })} placeholder={f.ph} className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" required={f.req} />
+                  </div>
+                ))}
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">🔒 {L.password}</label>
+                  <div className="relative">
+                    <input type={showPassword ? 'text' : 'password'} value={formData.Password} onChange={e => setFormData({ ...formData, Password: e.target.value })} placeholder="Enter password" className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none pr-10" required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50">{loading ? '⏳ Sending OTP...' : '📧 Send OTP to Email'}</button>
+              </form>
+
+            ) : (
+              <form onSubmit={handleLogin} className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">📧 {L.email}</label>
+                  <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Enter email" className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none" required />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">🔒 {L.password}</label>
+                  <div className="relative">
+                    <input type={showPassword ? 'text' : 'password'} value={formData.Password} onChange={e => setFormData({ ...formData, Password: e.target.value })} placeholder="Enter password" className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none pr-10" required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <button type="button" onClick={() => { setIsForgot(true); setError(''); setSuccess(''); }} className="text-green-600 text-xs font-medium hover:underline">🔐 Forgot Password?</button>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl text-sm font-bold disabled:opacity-50">{loading ? '⏳ Please wait...' : `🔐 ${L.loginBtn}`}</button>
+              </form>
+            )}
+          </>
+        )}
+
         <div className="flex justify-center gap-2 mt-5">
           {backgroundImages.map((_, index) => (
-            <div key={index} onClick={() => setCurrentBg(index)} style={{
-              height: '6px', width: currentBg === index ? '24px' : '8px',
-              borderRadius: '3px', cursor: 'pointer',
-              background: currentBg === index ? '#16a34a' : '#d1d5db',
-              transition: 'all 0.3s',
-            }} />
+            <div key={index} onClick={() => setCurrentBg(index)} style={{ height: '6px', width: currentBg === index ? '24px' : '8px', borderRadius: '3px', cursor: 'pointer', background: currentBg === index ? '#16a34a' : '#d1d5db', transition: 'all 0.3s' }} />
           ))}
         </div>
       </div>
