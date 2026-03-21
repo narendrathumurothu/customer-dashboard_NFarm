@@ -29,7 +29,7 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
 
   const fetchReviews = async () => {
     try {
-      const res  = await fetch(`http://localhost:4000/reviews/product/${product._id}`);
+      const res  = await fetch(`https://backend-node-js-nfarm.onrender.com/reviews/product/${product._id}`);
       const data = await res.json();
       setReviews(data.reviews || []);
       setAvgRating(data.avgRating || 0);
@@ -46,7 +46,7 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
     setReviewLoading(true);
     setReviewError(''); setReviewSuccess('');
     try {
-      const res  = await fetch('http://localhost:4000/reviews/add', {
+      const res  = await fetch('https://backend-node-js-nfarm.onrender.com/reviews/add', {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -76,7 +76,7 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm('Delete this review?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/reviews/${reviewId}`, {
+      const res = await fetch(`https://backend-node-js-nfarm.onrender.com/reviews/${reviewId}`, {
         method:  'DELETE',
         headers: { 'customer-token': customerToken },
       });
@@ -132,7 +132,7 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
           {/* Image */}
           <div className="md:w-1/2 h-72 md:h-auto bg-gray-50 min-h-64">
             {product.image ? (
-              <img src={`http://localhost:4000/uploads/${product.image}`}
+              <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${product.image}`}
                 alt={product.productName} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-9xl min-h-64">

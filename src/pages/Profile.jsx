@@ -48,7 +48,7 @@ const Profile = ({ setActivePage }) => {
   const fetchCustomer = async () => {
     try {
       const res  = await fetch(
-        `http://localhost:4000/customers/single-customer/${customerId}`
+        `https://backend-node-js-nfarm.onrender.com/customers/single-customer/${customerId}`
       );
       const data = await res.json();
       if (res.ok) {
@@ -67,7 +67,7 @@ const Profile = ({ setActivePage }) => {
   const fetchOrders = async () => {
     try {
       const res  = await fetch(
-        `http://localhost:4000/orders/my-orders/${customerId}`
+        `https://backend-node-js-nfarm.onrender.com/orders/my-orders/${customerId}`
       );
       const data = await res.json();
       if (res.ok) setOrders(Array.isArray(data) ? data : []);
@@ -95,7 +95,7 @@ const Profile = ({ setActivePage }) => {
       if (photo) form.append('image', photo);
 
       const res  = await fetch(
-        `http://localhost:4000/customers/update-customer/${customerId}`,
+        `https://backend-node-js-nfarm.onrender.com/customers/update-customer/${customerId}`,
         { method: 'PUT', body: form }
       );
       const data = await res.json();
@@ -197,7 +197,7 @@ const Profile = ({ setActivePage }) => {
                   <div className="relative">
                     {photoPreview || customer?.image ? (
                       <img
-                        src={photoPreview || `http://localhost:4000/uploads/${customer.image}`}
+                        src={photoPreview || `https://backend-node-js-nfarm.onrender.com/uploads/${customer.image}`}
                         alt="Profile"
                         className="w-24 h-24 rounded-full object-cover"
                         style={{ border: '4px solid #16a34a' }} />

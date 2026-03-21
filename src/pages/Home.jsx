@@ -46,9 +46,9 @@ const Home = ({ setActivePage, onProductClick, addToCart, onBuyNow }) => {
   const fetchAll = async () => {
     try {
       const [prodRes, firmRes, priceRes] = await Promise.all([
-        fetch('http://localhost:4000/products/allproducts'),
-        fetch('http://localhost:4000/firms/allfirms'),
-        fetch('http://localhost:4000/marketprice/getallprices'),
+        fetch('https://backend-node-js-nfarm.onrender.com/products/allproducts'),
+        fetch('https://backend-node-js-nfarm.onrender.com/firms/allfirms'),
+        fetch('https://backend-node-js-nfarm.onrender.com/marketprice/getallprices'),
       ]);
       const [prodData, firmData, priceData] = await Promise.all([
         prodRes.json(), firmRes.json(), priceRes.json(),
@@ -77,12 +77,12 @@ const Home = ({ setActivePage, onProductClick, addToCart, onBuyNow }) => {
       const coords = await getCoordinates(locationInput);
       setUserLocation(coords);
       const res  = await fetch(
-        `http://localhost:4000/firms/nearby-firms?lat=${coords.lat}&lng=${coords.lng}&radius=50`
+        `https://backend-node-js-nfarm.onrender.com/firms/nearby-firms?lat=${coords.lat}&lng=${coords.lng}&radius=50`
       );
       const data = await res.json();
       const nearFirms = data.firms || [];
       setNearbyFirms(nearFirms);
-      const prodRes  = await fetch('http://localhost:4000/products/allproducts');
+      const prodRes  = await fetch('https://backend-node-js-nfarm.onrender.com/products/allproducts');
       const prodData = await prodRes.json();
       if (Array.isArray(prodData) && nearFirms.length > 0) {
         const firmIds = nearFirms.map(f => f._id);
@@ -205,7 +205,7 @@ const Home = ({ setActivePage, onProductClick, addToCart, onBuyNow }) => {
                 <div key={index} className="bg-gray-50 rounded-2xl overflow-hidden hover:shadow-md transition-all">
                   <div className="h-24 bg-green-100">
                     {firm.image ? (
-                      <img src={`http://localhost:4000/uploads/${firm.image}`} alt={firm.firmName} className="w-full h-full object-cover" />
+                      <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${firm.image}`} alt={firm.firmName} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-4xl">{categoryEmojis[firm.category] || '🌾'}</div>
                     )}
@@ -230,7 +230,7 @@ const Home = ({ setActivePage, onProductClick, addToCart, onBuyNow }) => {
                 <div key={index} className="bg-gray-50 rounded-2xl overflow-hidden hover:shadow-md transition-all">
                   <div className="h-28 relative cursor-pointer" onClick={() => onProductClick(product)}>
                     {product.image ? (
-                      <img src={`http://localhost:4000/uploads/${product.image}`} alt={product.productName} className="w-full h-full object-cover" />
+                      <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${product.image}`} alt={product.productName} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-4xl bg-green-50">{categoryEmojis[product.category] || '🌾'}</div>
                     )}
@@ -314,7 +314,7 @@ const Home = ({ setActivePage, onProductClick, addToCart, onBuyNow }) => {
               <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                 <div className="h-36 bg-gray-50 relative cursor-pointer" onClick={() => onProductClick(product)}>
                   {product.image ? (
-                    <img src={`http://localhost:4000/uploads/${product.image}`} alt={product.productName} className="w-full h-full object-cover" />
+                    <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${product.image}`} alt={product.productName} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-5xl">{categoryEmojis[product.category] || '🌾'}</div>
                   )}

@@ -33,7 +33,7 @@ const Products = ({ onProductClick, addToCart, onBuyNow }) => {
 
   const fetchProducts = async () => {
     try {
-      const res  = await fetch('http://localhost:4000/products/allproducts');
+      const res  = await fetch('https://backend-node-js-nfarm.onrender.com/products/allproducts');
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
       setFiltered(Array.isArray(data) ? data : []);
@@ -43,7 +43,7 @@ const Products = ({ onProductClick, addToCart, onBuyNow }) => {
 
   const fetchMarketPrices = async () => {
     try {
-      const res  = await fetch('http://localhost:4000/marketprice/getallprices');
+      const res  = await fetch('https://backend-node-js-nfarm.onrender.com/marketprice/getallprices');
       const data = await res.json();
       setMarketPrices(Array.isArray(data) ? data : []);
     } catch (err) { console.log(err); }
@@ -174,7 +174,7 @@ const Products = ({ onProductClick, addToCart, onBuyNow }) => {
                 <div className="h-40 bg-gray-50 relative cursor-pointer"
                   onClick={() => onProductClick(product)}>
                   {product.image ? (
-                    <img src={`http://localhost:4000/uploads/${product.image}`}
+                    <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${product.image}`}
                       alt={product.productName} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-6xl">

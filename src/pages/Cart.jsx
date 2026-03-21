@@ -35,7 +35,7 @@ const Cart = ({ cart, removeFromCart, updateQty, onCheckout }) => {
                 className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
                 <div className="w-16 h-16 bg-gray-50 rounded-xl flex-shrink-0 overflow-hidden">
                   {item.image ? (
-                    <img src={`http://localhost:4000/uploads/${item.image}`}
+                    <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${item.image}`}
                       alt={item.productName} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-3xl">

@@ -134,7 +134,7 @@ const Orders = ({ setActivePage }) => {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res  = await fetch(`http://localhost:4000/orders/my-orders/${customerId}`);
+      const res  = await fetch(`https://backend-node-js-nfarm.onrender.com/orders/my-orders/${customerId}`);
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) { console.log(err); }
@@ -146,7 +146,7 @@ const Orders = ({ setActivePage }) => {
   const handleCancel = async (orderId) => {
     if (!window.confirm('Cancel this order?')) return;
     try {
-      const res  = await fetch(`http://localhost:4000/orders/cancel/${orderId}`, { method: 'PUT' });
+      const res  = await fetch(`https://backend-node-js-nfarm.onrender.com/orders/cancel/${orderId}`, { method: 'PUT' });
       const data = await res.json();
       if (res.ok) {
         setSuccess('✅ Order cancelled!');
@@ -231,7 +231,7 @@ const Orders = ({ setActivePage }) => {
                     <div key={i} className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0">
                         {item.image ? (
-                          <img src={`http://localhost:4000/uploads/${item.image}`}
+                          <img src={`https://backend-node-js-nfarm.onrender.com/uploads/${item.image}`}
                             alt={item.productName} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-lg">
