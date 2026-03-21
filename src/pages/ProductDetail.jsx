@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ShoppingCart, Check, Zap, Star } from 'lucide-react';
 
 const categoryEmojis = {
@@ -23,11 +23,9 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
   const [reviewSuccess, setReviewSuccess] = useState('');
   const [reviewError, setReviewError]     = useState('');
 
-  useEffect(() => {
-    if (product?._id) fetchReviews();
-  }, [product]);
-
-  const fetchReviews = async () => {
+  // ✅ Fix 1: Wrap fetchReviews in useCallback to stabilize reference
+  const fetchReviews = useCallback(async () => {
+    if (!product?._id) return;
     try {
       const res  = await fetch(`https://backend-node-js-nfarm.onrender.com/reviews/product/${product._id}`);
       const data = await res.json();
@@ -35,7 +33,12 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
       setAvgRating(data.avgRating || 0);
       setTotalReviews(data.totalReviews || 0);
     } catch (err) { console.log(err); }
-  };
+  }, [product?._id]);
+
+  // ✅ Fix 2: Now fetchReviews can safely be added to dependency array
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -153,7 +156,7 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
                 <span className="text-sm text-gray-400 font-normal"> /kg</span>
               </p>
 
-              {/* ✅ Rating Summary */}
+              {/* Rating Summary */}
               {totalReviews > 0 && (
                 <div className="flex items-center gap-2 mt-2">
                   {renderStars(Math.round(avgRating))}
@@ -211,7 +214,7 @@ const ProductDetail = ({ product, addToCart, onBuyNow, setActivePage }) => {
         </div>
       </div>
 
-      {/* ✅ Reviews Section */}
+      {/* Reviews Section */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
 
         {/* Reviews Header */}

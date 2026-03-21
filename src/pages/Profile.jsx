@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Edit, Save, X, Eye, EyeOff, Camera, Package, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Edit, Save, X, Eye, EyeOff, Camera } from 'lucide-react';
 
 const backgroundImages = [
   'https://images.pexels.com/photos/440731/pexels-photo-440731.jpeg',
@@ -11,7 +11,6 @@ const backgroundImages = [
 
 const Profile = ({ setActivePage }) => {
   const customerId = localStorage.getItem('customerId');
-  const token      = localStorage.getItem('customerToken');
 
   const [currentBg, setCurrentBg]       = useState(0);
   const [customer, setCustomer]         = useState(null);
@@ -40,12 +39,8 @@ const Profile = ({ setActivePage }) => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    fetchCustomer();
-    fetchOrders();
-  }, []);
-
-  const fetchCustomer = async () => {
+  // ✅ Fix: Wrap fetchCustomer in useCallback
+  const fetchCustomer = useCallback(async () => {
     try {
       const res  = await fetch(
         `https://backend-node-js-nfarm.onrender.com/customers/single-customer/${customerId}`
@@ -62,9 +57,10 @@ const Profile = ({ setActivePage }) => {
       }
     } catch (err) { console.log(err); }
     setLoading(false);
-  };
+  }, [customerId]);
 
-  const fetchOrders = async () => {
+  // ✅ Fix: Wrap fetchOrders in useCallback
+  const fetchOrders = useCallback(async () => {
     try {
       const res  = await fetch(
         `https://backend-node-js-nfarm.onrender.com/orders/my-orders/${customerId}`
@@ -72,7 +68,13 @@ const Profile = ({ setActivePage }) => {
       const data = await res.json();
       if (res.ok) setOrders(Array.isArray(data) ? data : []);
     } catch (err) { console.log(err); }
-  };
+  }, [customerId]);
+
+  // ✅ Fix: Now fetchCustomer and fetchOrders safely added to dependency array
+  useEffect(() => {
+    fetchCustomer();
+    fetchOrders();
+  }, [fetchCustomer, fetchOrders]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -131,7 +133,7 @@ const Profile = ({ setActivePage }) => {
     'Cancelled': { bg: '#fef2f2', color: '#dc2626', emoji: '❌' },
   };
 
-  const totalSpent    = orders.reduce((a, b) => a + b.totalAmount, 0);
+  const totalSpent      = orders.reduce((a, b) => a + b.totalAmount, 0);
   const deliveredOrders = orders.filter(o => o.status === 'Delivered').length;
 
   return (
@@ -264,9 +266,9 @@ const Profile = ({ setActivePage }) => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { emoji: '📦', label: 'Total Orders',    value: orders.length,      color: '#2563eb' },
-                { emoji: '🎉', label: 'Delivered',       value: deliveredOrders,    color: '#16a34a' },
-                { emoji: '💰', label: 'Total Spent',     value: `₹${totalSpent}`,   color: '#7c3aed' },
+                { emoji: '📦', label: 'Total Orders', value: orders.length,    color: '#2563eb' },
+                { emoji: '🎉', label: 'Delivered',    value: deliveredOrders,  color: '#16a34a' },
+                { emoji: '💰', label: 'Total Spent',  value: `₹${totalSpent}`, color: '#7c3aed' },
               ].map((stat, i) => (
                 <div key={i} className="rounded-2xl p-4 text-center"
                   style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(10px)' }}>
