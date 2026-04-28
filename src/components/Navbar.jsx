@@ -44,7 +44,7 @@ const Navbar = ({ activePage, setActivePage, cartCount, onLogout }) => {
 
           {/* ✅ Language Switcher - Desktop */}
           <div className="hidden md:block">
-            <LanguageSwitcher style="navbar" />
+            <LanguageSwitcher layout="navbar" />
           </div>
 
           {/* Cart */}
@@ -97,7 +97,7 @@ const Navbar = ({ activePage, setActivePage, cartCount, onLogout }) => {
           {/* Mobile Language Switcher */}
           <div className="pt-2 border-t border-green-600 mt-2">
             <p className="text-green-300 text-xs mb-2">🌐 Language:</p>
-            <LanguageSwitcher style="sidebar" />
+            <LanguageSwitcher layout="sidebar" />
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const LanguageSwitcher = ({ style = 'sidebar' }) => {
+const LanguageSwitcher = ({ layout = 'sidebar' }) => {
 
   const changeLanguage = (lang) => {
     const date = new Date();
@@ -30,7 +30,7 @@ const LanguageSwitcher = ({ style = 'sidebar' }) => {
   ];
 
   // Sidebar style
-  if (style === 'sidebar') {
+  if (layout === 'sidebar') {
     return (
       <div className="flex gap-1 bg-green-900 rounded-xl p-1 w-full">
         {langs.map(lang => (

@@ -16,7 +16,7 @@ const OrderSuccess = ({ setActivePage }) => {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [setActivePage]);
 
   return (
     <div className="min-h-96 flex items-center justify-center">
